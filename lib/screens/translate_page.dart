@@ -68,9 +68,6 @@ class _TranslatePageState extends State<TranslatePage> {
           child: SafeArea(
             child: Container(
               alignment: Alignment.topLeft,
-              margin: EdgeInsets.only(
-                  top: MediaQuery.of(context).size.height / 30,
-                  left: MediaQuery.of(context).size.width / 100),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -97,20 +94,23 @@ class _TranslatePageState extends State<TranslatePage> {
                               name: "noCamera",
                               lensDirection: CameraLensDirection.back,
                               sensorOrientation: 0)
-                      ? FutureBuilder<void>(
-                          future: _initializeControllerFuture,
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState ==
-                                ConnectionState.done) {
-                              // If the Future is complete, display the preview.
-                              return CameraPreview(_controller);
-                            } else {
-                              // Otherwise, display a loading indicator.
-                              return const Center(
-                                  child: CircularProgressIndicator());
-                            }
-                          },
-                        )
+                      ? Container(
+                          width: MediaQuery.of(context).size.width,
+                          height: MediaQuery.of(context).size.height / 2,
+                          child: FutureBuilder<void>(
+                            future: _initializeControllerFuture,
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.done) {
+                                // If the Future is complete, display the preview.
+                                return CameraPreview(_controller);
+                              } else {
+                                // Otherwise, display a loading indicator.
+                                return const Center(
+                                    child: CircularProgressIndicator());
+                              }
+                            },
+                          ))
                       : Padding(
                           padding: EdgeInsets.fromLTRB(
                               MediaQuery.of(context).size.width / 30,
@@ -129,6 +129,40 @@ class _TranslatePageState extends State<TranslatePage> {
                             textAlign: TextAlign.center,
                           ),
                         ),
+                  SizedBox(
+                    height: MediaQuery.of(context).size.height / 50,
+                  ),
+                  // Translated Text
+                  Expanded(
+                    flex: 1,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(
+                          MediaQuery.of(context).size.width / 20,
+                          0,
+                          MediaQuery.of(context).size.width / 20,
+                          0),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.vertical, //.horizontal
+                        child: Text(
+                          "1 Description that is too long in text format(Here Data is coming from API) jdlksaf j klkjjflkdsjfkddfdfsdfds " +
+                              "2 Description that is too long in text format(Here Data is coming from API) d fsdfdsfsdfd dfdsfdsf sdfdsfsd d " +
+                              "3 Description that is too long in text format(Here Data is coming from API)  adfsfdsfdfsdfdsf   dsf dfd fds fs" +
+                              "4 Description that is too long in text format(Here Data is coming from API) dsaf dsafdfdfsd dfdsfsda fdas dsad" +
+                              "5 Description that is too long in text format(Here Data is coming from API) dsfdsfd fdsfds fds fdsf dsfds fds " +
+                              "6 Description that is too long in text format(Here Data is coming from API) asdfsdfdsf fsdf sdfsdfdsf sd dfdsf" +
+                              "7 Description that is too long in text format(Here Data is coming from API) df dsfdsfdsfdsfds df dsfds fds fsd" +
+                              "8 Description that is too long in text format(Here Data is coming from API)" +
+                              "9 Description that is too long in text format(Here Data is coming from API)" +
+                              "10 Description that is too long in text format(Here Data is coming from API)",
+                          style: TextStyle(
+                            fontSize:
+                                MediaQuery.of(context).size.height * 0.01 * 2,
+                            color: darkTextColor,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                   // Stop Button
                   Padding(
                       padding: EdgeInsets.only(bottom: 0),
@@ -137,7 +171,7 @@ class _TranslatePageState extends State<TranslatePage> {
                           width: MediaQuery.of(context).size.width / 1.17,
                           alignment: Alignment.center,
                           margin: EdgeInsets.only(
-                              top: MediaQuery.of(context).size.height / 6),
+                              top: MediaQuery.of(context).size.height / 30),
                           decoration: const BoxDecoration(
                             color: translucentPink,
                             borderRadius:

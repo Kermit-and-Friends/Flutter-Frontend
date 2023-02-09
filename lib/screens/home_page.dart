@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
                       // Help Button
                       Padding(
                           padding: EdgeInsets.only(
-                              left: MediaQuery.of(context).size.width / 10),
+                              left: MediaQuery.of(context).size.width / 100),
                           child: Container(
                             height: MediaQuery.of(context).size.height / 22,
                             width: MediaQuery.of(context).size.width / 10,
@@ -286,7 +286,7 @@ class _HomePageState extends State<HomePage> {
                                                   .size
                                                   .height *
                                               0.01 *
-                                              3.8,
+                                              3.5,
                                           fontStyle: FontStyle.normal,
                                           fontWeight: FontWeight.bold,
                                           color: lightTextColor,
