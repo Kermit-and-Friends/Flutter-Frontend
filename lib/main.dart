@@ -9,7 +9,16 @@ Future<void> main() async {
 // Obtain a list of the available cameras on the device.
   final cameras = await availableCameras();
 // Get a specific camera from the list of available cameras.
-  final firstCamera = cameras.first;
+  final firstCamera;
+  if (cameras.isNotEmpty) {
+    firstCamera = cameras.first;
+  } else {
+    // Add dummy cameraDescriptor if there are no cameras detected on device
+    firstCamera = CameraDescription(
+        name: "noCamera",
+        lensDirection: CameraLensDirection.back,
+        sensorOrientation: 0);
+  }
 
   runApp(MyApp(camera: firstCamera));
 }
