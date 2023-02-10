@@ -121,7 +121,7 @@ class _HomePageState extends State<HomePage> {
                                                           MediaQuery.of(context)
                                                                   .size
                                                                   .height /
-                                                              20,
+                                                              50,
                                                     ),
                                                     Text(
                                                       "Step 1: Press the “Start Translating” button",
@@ -145,10 +145,10 @@ class _HomePageState extends State<HomePage> {
                                                           MediaQuery.of(context)
                                                                   .size
                                                                   .height /
-                                                              20,
+                                                              30,
                                                     ),
                                                     Text(
-                                                      "Step 2: Point your camera at the person signing",
+                                                      "Step 2: Choose whether you want to translate “speech to text”, or “sign language to text”.",
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
@@ -169,10 +169,10 @@ class _HomePageState extends State<HomePage> {
                                                           MediaQuery.of(context)
                                                                   .size
                                                                   .height /
-                                                              20,
+                                                              30,
                                                     ),
                                                     Text(
-                                                      "Step 3: Sign language will be immediately translated to written English",
+                                                      "If speech input is selected: Speech will be immediately translated to text",
                                                       textAlign:
                                                           TextAlign.center,
                                                       style: TextStyle(
@@ -193,7 +193,79 @@ class _HomePageState extends State<HomePage> {
                                                           MediaQuery.of(context)
                                                                   .size
                                                                   .height /
-                                                              40,
+                                                              50,
+                                                    ),
+                                                    Text(
+                                                      "If video input is selected: Sign language will be immediately translated to text",
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontSize: MediaQuery.of(
+                                                                      context)
+                                                                  .size
+                                                                  .height *
+                                                              0.01 *
+                                                              1.7,
+                                                          fontStyle:
+                                                              FontStyle.normal,
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                          color: darkTextColor),
+                                                    ),
+                                                    SizedBox(
+                                                      height:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height /
+                                                              30,
+                                                    ),
+                                                    Text(
+                                                      "Step 3: Press the “Stop” button to stop translating, and return to Step 2.",
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontSize: MediaQuery.of(
+                                                                      context)
+                                                                  .size
+                                                                  .height *
+                                                              0.01 *
+                                                              1.7,
+                                                          fontStyle:
+                                                              FontStyle.normal,
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                          color: darkTextColor),
+                                                    ),
+                                                    SizedBox(
+                                                      height:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height /
+                                                              30,
+                                                    ),
+                                                    Text(
+                                                      "*Press the “Back” button at any time to return to the main menu.",
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: TextStyle(
+                                                          fontSize: MediaQuery.of(
+                                                                      context)
+                                                                  .size
+                                                                  .height *
+                                                              0.01 *
+                                                              1.7,
+                                                          fontStyle:
+                                                              FontStyle.normal,
+                                                          fontWeight:
+                                                              FontWeight.normal,
+                                                          color: darkTextColor),
+                                                    ),
+                                                    SizedBox(
+                                                      height:
+                                                          MediaQuery.of(context)
+                                                                  .size
+                                                                  .height /
+                                                              100,
                                                     ),
                                                     RoundedButton(
                                                       title: 'Ok',
