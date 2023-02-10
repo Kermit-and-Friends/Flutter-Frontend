@@ -729,9 +729,13 @@ class _TranslatePageState extends State<TranslatePage> {
                                       ),
                                       onPressed: () =>
                                       {
-                                        timer?.cancel(),
-                                        socket.disconnect(),
-                                        socket.dispose(),
+                                        if (mode == 1) {
+                                          timer?.cancel(),
+                                          socket.disconnect(),
+                                          socket.dispose(),
+                                        } else if (mode == 2) {
+                                          _stopListening(),
+                                        },
                                         Navigator.pop(context),
                                       },
                                       child: Text(
