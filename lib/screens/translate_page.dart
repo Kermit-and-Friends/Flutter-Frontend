@@ -1,6 +1,11 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:frontend/constant.dart';
+import 'package:socket_io_client/socket_io_client.dart' as IO;
 
 class TranslatePage extends StatefulWidget {
   const TranslatePage({Key? key, required this.camera}) : super(key: key);
@@ -13,6 +18,7 @@ class TranslatePage extends StatefulWidget {
 class _TranslatePageState extends State<TranslatePage> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
+  late IO.Socket socket;
 
   @override
   void setState(fn) {
@@ -24,6 +30,7 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
+    initSocket();
     // To display the current output from the Camera,
     // create a CameraController.
     if (widget.camera !=
@@ -43,6 +50,20 @@ class _TranslatePageState extends State<TranslatePage> {
     }
   }
 
+  initSocket() {
+    socket = IO.io("https://bdb1-137-132-119-7.ap.ngrok.io", <String, dynamic>{
+      'autoConnect': false,
+      'transports': ['websocket'],
+    });
+    socket.connect();
+    socket.onConnect((_) {
+      print('Connection established');
+    });
+    socket.onDisconnect((_) => print('Connection Disconnection'));
+    socket.onConnectError((err) => print(err));
+    socket.onError((err) => print(err));
+  }
+
   @override
   void dispose() {
     if (widget.camera !=
@@ -53,7 +74,42 @@ class _TranslatePageState extends State<TranslatePage> {
       // Dispose of the controller when the widget is disposed.
       _controller.dispose();
     }
+    socket.disconnect();
+    socket.dispose();
     super.dispose();
+  }
+
+  sendMessage(image) async {
+    // image = image.toByteData();
+    // final message = base64Encode(image.buffer.asUint8List(image.offsetInBytes, image.lengthInBytes));
+    ByteData byteData = await rootBundle.load('assets/images/hand.jpg');
+    Uint8List bytes = byteData.buffer.asUint8List();
+    String base64Image = base64.encode(bytes);
+    base64Image = "data:image/jpeg;base64," + base64Image;
+    // if (message.isEmpty) return;
+    Map messageMap = {
+      // 'message': message,
+      'senderId': 1,
+      'receiverId': 2,
+      'time': DateTime.now().millisecondsSinceEpoch,
+    };
+    socket.emit('image', base64Image);
+    socket.on('response_back', (newMessage) {
+      print(newMessage);
+    });
+  }
+
+  takePicture() async {
+    try {
+      // Ensure that the camera is initialized.
+      await _initializeControllerFuture;
+      // Attempt to take a picture and then get the location
+      // where the image file is saved.
+      Image image = (await _controller.takePicture()) as Image;
+    } catch (e) {
+      // If an error occurs, log the error to the console.
+      print(e);
+    }
   }
 
   @override
@@ -207,7 +263,10 @@ class _TranslatePageState extends State<TranslatePage> {
                                         ),
                                         elevation: 0,
                                       ),
-                                      onPressed: () => {},
+                                      onPressed: () => {
+                                        sendMessage(Image.asset(
+                                            "assets/images/hand.jpg")),
+                                      },
                                       child: Text(
                                         "STOP",
                                         style: TextStyle(

@@ -19,7 +19,6 @@ Future<void> main() async {
         lensDirection: CameraLensDirection.back,
         sensorOrientation: 0);
   }
-
   runApp(MyApp(camera: firstCamera));
 }
 
