@@ -8,6 +8,11 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:frontend/constant.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
+
 class TranslatePage extends StatefulWidget {
   const TranslatePage({Key? key, required this.camera}) : super(key: key);
   final CameraDescription camera;
@@ -23,6 +28,9 @@ class _TranslatePageState extends State<TranslatePage> {
   String translatedText = "";
   Timer? timer;
   int mode = 0;
+  SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
+  String _lastWords = '';
 
   @override
   void setState(fn) {
@@ -34,7 +42,6 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
-    // initSocket();
     // To display the current output from the Camera,
     // create a CameraController.
     if (widget.camera !=
@@ -52,6 +59,7 @@ class _TranslatePageState extends State<TranslatePage> {
       // Next, initialize the controller. This returns a Future.
       _initializeControllerFuture = _controller.initialize();
     }
+    _initSpeech();
   }
 
   initSocket() {
@@ -72,6 +80,27 @@ class _TranslatePageState extends State<TranslatePage> {
     });
     timer =
         Timer.periodic(Duration(seconds: 1), (Timer t) => takeAndSendPicture());
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  void _startListening() async {
+    await _speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      translatedText = result.recognizedWords;
+    });
   }
 
   @override
@@ -298,6 +327,9 @@ class _TranslatePageState extends State<TranslatePage> {
                                           socket.disconnect(),
                                           socket.dispose(),
                                         },
+                                        if (mode == 2) {
+                                          _stopListening(),
+                                        },
                                         translatedText = "",
                                         mode = 0,
                                         _updateState(),
@@ -373,6 +405,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                           onPressed: () => {
                                             mode = 2,
                                             _updateState(),
+                                            _startListening,
                                           },
                                           child: Text(
                                             "SPEECH",
