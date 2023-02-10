@@ -47,6 +47,7 @@ class _TranslatePageState extends State<TranslatePage> {
         // Define the resolution to use.
         ResolutionPreset.medium,
         enableAudio: false,
+        imageFormatGroup: ImageFormatGroup.yuv420,
       );
       // Next, initialize the controller. This returns a Future.
       _initializeControllerFuture = _controller.initialize();
