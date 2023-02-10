@@ -7,6 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:frontend/constant.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
+import 'package:speech_to_text/speech_recognition_result.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 class TranslatePage extends StatefulWidget {
   const TranslatePage({Key? key, required this.camera}) : super(key: key);
@@ -23,6 +25,8 @@ class _TranslatePageState extends State<TranslatePage> {
   String translatedText = "";
   Timer? timer;
   int mode = 0;
+  SpeechToText _speechToText = SpeechToText();
+  bool _speechEnabled = false;
 
   @override
   void setState(fn) {
@@ -34,7 +38,6 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
-    // initSocket();
     // To display the current output from the Camera,
     // create a CameraController.
     if (widget.camera !=
@@ -52,6 +55,7 @@ class _TranslatePageState extends State<TranslatePage> {
       // Next, initialize the controller. This returns a Future.
       _initializeControllerFuture = _controller.initialize();
     }
+    _initSpeech();
   }
 
   initSocket() {
@@ -72,6 +76,29 @@ class _TranslatePageState extends State<TranslatePage> {
     });
     timer =
         Timer.periodic(Duration(seconds: 1), (Timer t) => takeAndSendPicture());
+  }
+
+  void _initSpeech() async {
+    _speechEnabled = await _speechToText.initialize();
+    setState(() {});
+  }
+
+  void _startListening() async {
+    print("listening");
+    await _speechToText.listen(onResult: _onSpeechResult);
+    setState(() {});
+  }
+
+  void _stopListening() async {
+    await _speechToText.stop();
+    setState(() {});
+  }
+
+  void _onSpeechResult(SpeechRecognitionResult result) {
+    setState(() {
+      translatedText = result.recognizedWords;
+      print(translatedText);
+    });
   }
 
   @override
@@ -117,8 +144,14 @@ class _TranslatePageState extends State<TranslatePage> {
       onWillPop: () async => false,
       child: Scaffold(
         body: Container(
-          width: MediaQuery.of(context).size.width,
-          height: MediaQuery.of(context).size.height,
+          width: MediaQuery
+              .of(context)
+              .size
+              .width,
+          height: MediaQuery
+              .of(context)
+              .size
+              .height,
           decoration: const BoxDecoration(gradient: background),
           child: SafeArea(
             child: Container(
@@ -131,12 +164,18 @@ class _TranslatePageState extends State<TranslatePage> {
                   Padding(
                     padding: EdgeInsets.only(
                         bottom: 0,
-                        left: MediaQuery.of(context).size.width / 20),
+                        left: MediaQuery
+                            .of(context)
+                            .size
+                            .width / 20),
                     child: Text(
                       "Point your camera at the person signing!",
                       style: TextStyle(
                         fontSize:
-                            MediaQuery.of(context).size.height * 0.01 * 2.8,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .height * 0.01 * 2.8,
                         fontStyle: FontStyle.normal,
                         fontWeight: FontWeight.bold,
                         color: darkTextColor,
@@ -144,16 +183,22 @@ class _TranslatePageState extends State<TranslatePage> {
                       textAlign: TextAlign.left,
                     ),
                   )
-                  : mode == 2 ?
+                      : mode == 2 ?
                   Padding(
                     padding: EdgeInsets.only(
                         bottom: 0,
-                        left: MediaQuery.of(context).size.width / 20),
+                        left: MediaQuery
+                            .of(context)
+                            .size
+                            .width / 20),
                     child: Text(
                       "Speak into the microphone!",
                       style: TextStyle(
                         fontSize:
-                        MediaQuery.of(context).size.height * 0.01 * 2.8,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .height * 0.01 * 2.8,
                         fontStyle: FontStyle.normal,
                         fontWeight: FontWeight.bold,
                         color: darkTextColor,
@@ -161,76 +206,117 @@ class _TranslatePageState extends State<TranslatePage> {
                       textAlign: TextAlign.left,
                     ),
                   )
-                  : Container(
-                    height: MediaQuery.of(context).size.height / 12,
+                      : Container(
+                    height: MediaQuery
+                        .of(context)
+                        .size
+                        .height / 12,
                   ),
                   mode != 2
-                  ? // Camera Feed
+                      ? // Camera Feed
                   widget.camera !=
-                          CameraDescription(
-                              name: "noCamera",
-                              lensDirection: CameraLensDirection.back,
-                              sensorOrientation: 0)
+                      CameraDescription(
+                          name: "noCamera",
+                          lensDirection: CameraLensDirection.back,
+                          sensorOrientation: 0)
                       ? Container(
-                          width: MediaQuery.of(context).size.width,
-                          height: MediaQuery.of(context).size.height / 2,
-                          child: FutureBuilder<void>(
-                            future: _initializeControllerFuture,
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.done) {
-                                // If the Future is complete, display the preview.
-                                return CameraPreview(_controller);
-                              } else {
-                                // Otherwise, display a loading indicator.
-                                return const Center(
-                                    child: CircularProgressIndicator());
-                              }
-                            },
-                          ))
+                      width: MediaQuery
+                          .of(context)
+                          .size
+                          .width,
+                      height: MediaQuery
+                          .of(context)
+                          .size
+                          .height / 2,
+                      child: FutureBuilder<void>(
+                        future: _initializeControllerFuture,
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.done) {
+                            // If the Future is complete, display the preview.
+                            return CameraPreview(_controller);
+                          } else {
+                            // Otherwise, display a loading indicator.
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
+                        },
+                      ))
                       : Padding(
-                          padding: EdgeInsets.fromLTRB(
-                              MediaQuery.of(context).size.width / 30,
-                              MediaQuery.of(context).size.height / 4.5,
-                              MediaQuery.of(context).size.width / 30,
-                              MediaQuery.of(context).size.height / 10),
-                          child: Text(
-                            "No camera detected.\nPlease allow camera access in Settings, or use another device with a camera.\nThank you! :)",
-                            style: TextStyle(
-                              fontSize:
-                                  MediaQuery.of(context).size.height * 0.01 * 2,
-                              fontStyle: FontStyle.normal,
-                              fontWeight: FontWeight.bold,
-                              color: darkTextColor,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        )
-                  : // Audio input gif
+                    padding: EdgeInsets.fromLTRB(
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .width / 30,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .height / 4.5,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .width / 30,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .height / 10),
+                    child: Text(
+                      "No camera detected.\nPlease allow camera access in Settings, or use another device with a camera.\nThank you! :)",
+                      style: TextStyle(
+                        fontSize:
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .height * 0.01 * 2,
+                        fontStyle: FontStyle.normal,
+                        fontWeight: FontWeight.bold,
+                        color: darkTextColor,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  )
+                      : // Audio input gif
                   Padding(
                     padding: EdgeInsets.fromLTRB(
-                        MediaQuery.of(context).size.width / 30,
-                        MediaQuery.of(context).size.height / 4.5,
-                        MediaQuery.of(context).size.width / 30,
-                        MediaQuery.of(context).size.height / 10),
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .width / 30,
+                        0,
+                        MediaQuery
+                            .of(context)
+                            .size
+                            .width / 30,
+                        0),
                     child: Image.asset(
                       "assets/images/audioInput.gif",
-                      width: MediaQuery.of(context).size.width,
-                      height: MediaQuery.of(context).size.height / 4,
+                      width: MediaQuery
+                          .of(context)
+                          .size
+                          .width,
                     ),
                   ),
                   SizedBox(
-                    height: MediaQuery.of(context).size.height / 50,
+                    height: MediaQuery
+                        .of(context)
+                        .size
+                        .height / 50,
                   ),
                   // Translated Text
                   mode == 1 || mode == 2
-                  ? Expanded(
+                      ? Expanded(
                     flex: 1,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
-                          MediaQuery.of(context).size.width / 20,
+                          MediaQuery
+                              .of(context)
+                              .size
+                              .width / 20,
                           0,
-                          MediaQuery.of(context).size.width / 20,
+                          MediaQuery
+                              .of(context)
+                              .size
+                              .width / 20,
                           0),
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical, //.horizontal
@@ -238,48 +324,78 @@ class _TranslatePageState extends State<TranslatePage> {
                           translatedText,
                           style: TextStyle(
                             fontSize:
-                                MediaQuery.of(context).size.height * 0.01 * 2,
+                            MediaQuery
+                                .of(context)
+                                .size
+                                .height * 0.01 * 2,
                             color: darkTextColor,
                           ),
                         ),
                       ),
                     ),
                   )
-                  : Container(),
+                      : Container(),
                   mode == 1 || mode == 2
-                  ?
+                      ?
                   // Stop Button
                   Padding(
                       padding: EdgeInsets.only(bottom: 0),
                       child: Container(
-                          height: MediaQuery.of(context).size.height / 19,
-                          width: MediaQuery.of(context).size.width / 1.17,
+                          height: MediaQuery
+                              .of(context)
+                              .size
+                              .height / 19,
+                          width: MediaQuery
+                              .of(context)
+                              .size
+                              .width / 1.17,
                           alignment: Alignment.center,
                           margin: EdgeInsets.only(
-                              top: MediaQuery.of(context).size.height / 30),
+                              top: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height / 30),
                           decoration: const BoxDecoration(
                             color: translucentPink,
                             borderRadius:
-                                BorderRadius.all(Radius.circular(180)),
+                            BorderRadius.all(Radius.circular(180)),
                           ),
                           child: Container(
-                              height: MediaQuery.of(context).size.height / 19,
-                              width: MediaQuery.of(context).size.width / 1.17,
+                              height: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height / 19,
+                              width: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .width / 1.17,
                               alignment: Alignment.center,
                               margin: EdgeInsets.all(
-                                  MediaQuery.of(context).size.height / 200),
+                                  MediaQuery
+                                      .of(context)
+                                      .size
+                                      .height / 200),
                               decoration: const BoxDecoration(
                                 gradient: circleGradient,
                                 borderRadius:
-                                    BorderRadius.all(Radius.circular(180)),
+                                BorderRadius.all(Radius.circular(180)),
                               ),
                               child: Container(
                                   margin: EdgeInsets.all(
-                                      MediaQuery.of(context).size.height / 200),
+                                      MediaQuery
+                                          .of(context)
+                                          .size
+                                          .height / 200),
                                   child: SizedBox(
                                     height:
-                                        MediaQuery.of(context).size.height / 19,
-                                    width: MediaQuery.of(context).size.width /
+                                    MediaQuery
+                                        .of(context)
+                                        .size
+                                        .height / 19,
+                                    width: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .width /
                                         1.17,
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
@@ -292,11 +408,15 @@ class _TranslatePageState extends State<TranslatePage> {
                                         ),
                                         elevation: 0,
                                       ),
-                                      onPressed: () => {
+                                      onPressed: () =>
+                                      {
                                         if (mode == 1) {
                                           timer?.cancel(),
                                           socket.disconnect(),
                                           socket.dispose(),
+                                        },
+                                        if (mode == 2) {
+                                          _stopListening(),
                                         },
                                         translatedText = "",
                                         mode = 0,
@@ -305,9 +425,10 @@ class _TranslatePageState extends State<TranslatePage> {
                                       child: Text(
                                         "STOP",
                                         style: TextStyle(
-                                          fontSize: MediaQuery.of(context)
-                                                  .size
-                                                  .height *
+                                          fontSize: MediaQuery
+                                              .of(context)
+                                              .size
+                                              .height *
                                               0.01 *
                                               2.2,
                                           fontStyle: FontStyle.normal,
@@ -318,181 +439,282 @@ class _TranslatePageState extends State<TranslatePage> {
                                       ),
                                     ),
                                   )))))
-                  : // Mic and Video Button
+                      : // Mic and Video Button
                   Column(
-                    children: [
-                      SizedBox(
-                        height: MediaQuery.of(context).size.height / 5.03),
-                      Row (
-                    children: [
-                      SizedBox(
-                          width: MediaQuery.of(context).size.width / 14),
-                      Padding(
-                          padding: EdgeInsets.only(bottom: 0),
-                          child: Container(
-                              height: MediaQuery.of(context).size.height / 19,
-                              width: MediaQuery.of(context).size.width / 2.5,
-                              alignment: Alignment.center,
-                              margin: EdgeInsets.only(
-                                  top: MediaQuery.of(context).size.height / 40),
-                              decoration: const BoxDecoration(
-                                color: translucentPink,
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(180)),
-                              ),
-                              child: Container(
-                                  height: MediaQuery.of(context).size.height / 19,
-                                  width: MediaQuery.of(context).size.width / 2.5,
-                                  alignment: Alignment.center,
-                                  margin: EdgeInsets.all(
-                                      MediaQuery.of(context).size.height / 200),
-                                  decoration: const BoxDecoration(
-                                    gradient: circleGradient,
-                                    borderRadius:
-                                    BorderRadius.all(Radius.circular(180)),
-                                  ),
-                                  child: Container(
-                                      margin: EdgeInsets.all(
-                                          MediaQuery.of(context).size.height / 200),
-                                      child: SizedBox(
-                                        height:
-                                        MediaQuery.of(context).size.height / 19,
-                                        width: MediaQuery.of(context).size.width /
-                                            2.5,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            primary: translucentWhite,
-                                            onPrimary: translucentWhite,
-                                            splashFactory: NoSplash.splashFactory,
-                                            shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(180)),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          onPressed: () => {
-                                            mode = 2,
-                                            _updateState(),
-                                          },
-                                          child: Text(
-                                            "SPEECH",
-                                            style: TextStyle(
-                                              fontSize: MediaQuery.of(context)
-                                                  .size
-                                                  .height *
-                                                  0.01 *
-                                                  2,
-                                              fontStyle: FontStyle.normal,
-                                              fontWeight: FontWeight.bold,
-                                              color: lightTextColor,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
+                      children: [
+                        SizedBox(
+                            height: MediaQuery
+                                .of(context)
+                                .size
+                                .height / 8),
+                        Row(
+                          children: [
+                            SizedBox(
+                                width: MediaQuery
+                                    .of(context)
+                                    .size
+                                    .width / 14),
+                            Padding(
+                                padding: EdgeInsets.only(bottom: 0),
+                                child: Container(
+                                    height: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .height / 19,
+                                    width: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .width / 2.5,
+                                    alignment: Alignment.center,
+                                    margin: EdgeInsets.only(
+                                        top: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .height / 40),
+                                    decoration: const BoxDecoration(
+                                      color: translucentPink,
+                                      borderRadius:
+                                      BorderRadius.all(Radius.circular(180)),
+                                    ),
+                                    child: Container(
+                                        height: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .height / 19,
+                                        width: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .width / 2.5,
+                                        alignment: Alignment.center,
+                                        margin: EdgeInsets.all(
+                                            MediaQuery
+                                                .of(context)
+                                                .size
+                                                .height / 200),
+                                        decoration: const BoxDecoration(
+                                          gradient: circleGradient,
+                                          borderRadius:
+                                          BorderRadius.all(
+                                              Radius.circular(180)),
                                         ),
-                                      ))))),
-                      SizedBox(
-                        width: MediaQuery.of(context).size.width / 18,
-                      ),
-                      Padding(
-                          padding: EdgeInsets.only(bottom: 0),
-                          child: Container(
-                              height: MediaQuery.of(context).size.height / 19,
-                              width: MediaQuery.of(context).size.width / 2.5,
-                              alignment: Alignment.center,
-                              margin: EdgeInsets.only(
-                                  top: MediaQuery.of(context).size.height / 40),
-                              decoration: const BoxDecoration(
-                                color: translucentPink,
-                                borderRadius:
-                                BorderRadius.all(Radius.circular(180)),
-                              ),
-                              child: Container(
-                                  height: MediaQuery.of(context).size.height / 19,
-                                  width: MediaQuery.of(context).size.width / 2.5,
-                                  alignment: Alignment.center,
-                                  margin: EdgeInsets.all(
-                                      MediaQuery.of(context).size.height / 200),
-                                  decoration: const BoxDecoration(
-                                    gradient: circleGradient,
-                                    borderRadius:
-                                    BorderRadius.all(Radius.circular(180)),
-                                  ),
-                                  child: Container(
-                                      margin: EdgeInsets.all(
-                                          MediaQuery.of(context).size.height / 200),
-                                      child: SizedBox(
-                                        height:
-                                        MediaQuery.of(context).size.height / 19,
-                                        width: MediaQuery.of(context).size.width /
-                                            2.5,
-                                        child: ElevatedButton(
-                                          style: ElevatedButton.styleFrom(
-                                            primary: translucentWhite,
-                                            onPrimary: translucentWhite,
-                                            splashFactory: NoSplash.splashFactory,
-                                            shape: const RoundedRectangleBorder(
-                                              borderRadius: BorderRadius.all(
-                                                  Radius.circular(180)),
-                                            ),
-                                            elevation: 0,
-                                          ),
-                                          onPressed: () => {
-                                            mode = 1,
-                                            _updateState(),
-                                            initSocket(),
-                                          },
-                                          child: Text(
-                                            "VIDEO",
-                                            style: TextStyle(
-                                              fontSize: MediaQuery.of(context)
+                                        child: Container(
+                                            margin: EdgeInsets.all(
+                                                MediaQuery
+                                                    .of(context)
+                                                    .size
+                                                    .height / 200),
+                                            child: SizedBox(
+                                              height:
+                                              MediaQuery
+                                                  .of(context)
                                                   .size
-                                                  .height *
-                                                  0.01 *
-                                                  2,
-                                              fontStyle: FontStyle.normal,
-                                              fontWeight: FontWeight.bold,
-                                              color: lightTextColor,
-                                            ),
-                                            textAlign: TextAlign.center,
-                                          ),
+                                                  .height / 19,
+                                              width: MediaQuery
+                                                  .of(context)
+                                                  .size
+                                                  .width /
+                                                  2.5,
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  primary: translucentWhite,
+                                                  onPrimary: translucentWhite,
+                                                  splashFactory: NoSplash
+                                                      .splashFactory,
+                                                  shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .all(
+                                                        Radius.circular(180)),
+                                                  ),
+                                                  elevation: 0,
+                                                ),
+                                                onPressed: () =>
+                                                {
+                                                  mode = 2,
+                                                  _updateState(),
+                                                  _startListening(),
+                                                },
+                                                child: Text(
+                                                  "SPEECH",
+                                                  style: TextStyle(
+                                                    fontSize: MediaQuery
+                                                        .of(context)
+                                                        .size
+                                                        .height *
+                                                        0.01 *
+                                                        2,
+                                                    fontStyle: FontStyle.normal,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: lightTextColor,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ))))),
+                            SizedBox(
+                              width: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .width / 18,
+                            ),
+                            Padding(
+                                padding: EdgeInsets.only(bottom: 0),
+                                child: Container(
+                                    height: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .height / 19,
+                                    width: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .width / 2.5,
+                                    alignment: Alignment.center,
+                                    margin: EdgeInsets.only(
+                                        top: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .height / 40),
+                                    decoration: const BoxDecoration(
+                                      color: translucentPink,
+                                      borderRadius:
+                                      BorderRadius.all(Radius.circular(180)),
+                                    ),
+                                    child: Container(
+                                        height: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .height / 19,
+                                        width: MediaQuery
+                                            .of(context)
+                                            .size
+                                            .width / 2.5,
+                                        alignment: Alignment.center,
+                                        margin: EdgeInsets.all(
+                                            MediaQuery
+                                                .of(context)
+                                                .size
+                                                .height / 200),
+                                        decoration: const BoxDecoration(
+                                          gradient: circleGradient,
+                                          borderRadius:
+                                          BorderRadius.all(
+                                              Radius.circular(180)),
                                         ),
-                                      ))))),
-                    ],
-                  ),
-                  ]
+                                        child: Container(
+                                            margin: EdgeInsets.all(
+                                                MediaQuery
+                                                    .of(context)
+                                                    .size
+                                                    .height / 200),
+                                            child: SizedBox(
+                                              height:
+                                              MediaQuery
+                                                  .of(context)
+                                                  .size
+                                                  .height / 19,
+                                              width: MediaQuery
+                                                  .of(context)
+                                                  .size
+                                                  .width /
+                                                  2.5,
+                                              child: ElevatedButton(
+                                                style: ElevatedButton.styleFrom(
+                                                  primary: translucentWhite,
+                                                  onPrimary: translucentWhite,
+                                                  splashFactory: NoSplash
+                                                      .splashFactory,
+                                                  shape: const RoundedRectangleBorder(
+                                                    borderRadius: BorderRadius
+                                                        .all(
+                                                        Radius.circular(180)),
+                                                  ),
+                                                  elevation: 0,
+                                                ),
+                                                onPressed: () =>
+                                                {
+                                                  mode = 1,
+                                                  _updateState(),
+                                                  initSocket(),
+                                                },
+                                                child: Text(
+                                                  "VIDEO",
+                                                  style: TextStyle(
+                                                    fontSize: MediaQuery
+                                                        .of(context)
+                                                        .size
+                                                        .height *
+                                                        0.01 *
+                                                        2,
+                                                    fontStyle: FontStyle.normal,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: lightTextColor,
+                                                  ),
+                                                  textAlign: TextAlign.center,
+                                                ),
+                                              ),
+                                            ))))),
+                          ],
+                        ),
+                      ]
                   ),
                   // Back Button
                   Padding(
                       padding: EdgeInsets.only(bottom: 0),
                       child: Container(
-                          height: MediaQuery.of(context).size.height / 19,
-                          width: MediaQuery.of(context).size.width / 1.17,
+                          height: MediaQuery
+                              .of(context)
+                              .size
+                              .height / 19,
+                          width: MediaQuery
+                              .of(context)
+                              .size
+                              .width / 1.17,
                           alignment: Alignment.center,
                           margin: EdgeInsets.only(
-                              top: MediaQuery.of(context).size.height / 40),
+                              top: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height / 40),
                           decoration: const BoxDecoration(
                             color: translucentPink,
                             borderRadius:
-                                BorderRadius.all(Radius.circular(180)),
+                            BorderRadius.all(Radius.circular(180)),
                           ),
                           child: Container(
-                              height: MediaQuery.of(context).size.height / 19,
-                              width: MediaQuery.of(context).size.width / 1.17,
+                              height: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height / 19,
+                              width: MediaQuery
+                                  .of(context)
+                                  .size
+                                  .width / 1.17,
                               alignment: Alignment.center,
                               margin: EdgeInsets.all(
-                                  MediaQuery.of(context).size.height / 200),
+                                  MediaQuery
+                                      .of(context)
+                                      .size
+                                      .height / 200),
                               decoration: const BoxDecoration(
                                 gradient: circleGradient,
                                 borderRadius:
-                                    BorderRadius.all(Radius.circular(180)),
+                                BorderRadius.all(Radius.circular(180)),
                               ),
                               child: Container(
                                   margin: EdgeInsets.all(
-                                      MediaQuery.of(context).size.height / 200),
+                                      MediaQuery
+                                          .of(context)
+                                          .size
+                                          .height / 200),
                                   child: SizedBox(
                                     height:
-                                        MediaQuery.of(context).size.height / 19,
-                                    width: MediaQuery.of(context).size.width /
+                                    MediaQuery
+                                        .of(context)
+                                        .size
+                                        .height / 19,
+                                    width: MediaQuery
+                                        .of(context)
+                                        .size
+                                        .width /
                                         1.17,
                                     child: ElevatedButton(
                                       style: ElevatedButton.styleFrom(
@@ -505,7 +727,8 @@ class _TranslatePageState extends State<TranslatePage> {
                                         ),
                                         elevation: 0,
                                       ),
-                                      onPressed: () => {
+                                      onPressed: () =>
+                                      {
                                         timer?.cancel(),
                                         socket.disconnect(),
                                         socket.dispose(),
@@ -514,9 +737,10 @@ class _TranslatePageState extends State<TranslatePage> {
                                       child: Text(
                                         "BACK",
                                         style: TextStyle(
-                                          fontSize: MediaQuery.of(context)
-                                                  .size
-                                                  .height *
+                                          fontSize: MediaQuery
+                                              .of(context)
+                                              .size
+                                              .height *
                                               0.01 *
                                               2.2,
                                           fontStyle: FontStyle.normal,
