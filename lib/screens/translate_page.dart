@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -19,6 +20,8 @@ class _TranslatePageState extends State<TranslatePage> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
   late IO.Socket socket;
+  String translatedText = "";
+  Timer? timer;
 
   @override
   void setState(fn) {
@@ -48,10 +51,16 @@ class _TranslatePageState extends State<TranslatePage> {
       // Next, initialize the controller. This returns a Future.
       _initializeControllerFuture = _controller.initialize();
     }
+    socket.on('response_back', (newMessage) {
+      print("socketon");
+      translatedText = translatedText + newMessage[0];
+    });
+    timer =
+        Timer.periodic(Duration(seconds: 1), (Timer t) => takeAndSendPicture());
   }
 
   initSocket() {
-    socket = IO.io("https://bdb1-137-132-119-7.ap.ngrok.io", <String, dynamic>{
+    socket = IO.io("https://f1c1-137-132-119-1.ap.ngrok.io", <String, dynamic>{
       'autoConnect': false,
       'transports': ['websocket'],
     });
@@ -79,33 +88,48 @@ class _TranslatePageState extends State<TranslatePage> {
     super.dispose();
   }
 
-  sendMessage(image) async {
-    // image = image.toByteData();
-    // final message = base64Encode(image.buffer.asUint8List(image.offsetInBytes, image.lengthInBytes));
-    ByteData byteData = await rootBundle.load('assets/images/hand.jpg');
+  sendMessage(imagePath) async {
+    print("sendingmessage");
+    ByteData byteData = await rootBundle.load(imagePath);
+    // ByteData byteData = await rootBundle.load('assets/images/hand.jpg');
     Uint8List bytes = byteData.buffer.asUint8List();
     String base64Image = base64.encode(bytes);
     base64Image = "data:image/jpeg;base64," + base64Image;
-    // if (message.isEmpty) return;
-    Map messageMap = {
-      // 'message': message,
-      'senderId': 1,
-      'receiverId': 2,
-      'time': DateTime.now().millisecondsSinceEpoch,
-    };
+    // Map messageMap = {
+    //   // 'message': message,
+    //   'senderId': 1,
+    //   'receiverId': 2,
+    //   'time': DateTime.now().millisecondsSinceEpoch,
+    // };
+    // Transmit image to server
     socket.emit('image', base64Image);
-    socket.on('response_back', (newMessage) {
-      print(newMessage);
-    });
+    // Get translated letter from server
+    _updateState();
   }
 
-  takePicture() async {
+  // takePicture() async {
+  //   try {
+  //     // Ensure that the camera is initialized.
+  //     await _initializeControllerFuture;
+  //     // Attempt to take a picture and then get the location
+  //     // where the image file is saved.
+  //     final image = await _controller.takePicture();
+  //     print(image.path);
+  //     return image.path;
+  //   } catch (e) {
+  //     // If an error occurs, log the error to the console.
+  //     print(e);
+  //   }
+  // }
+
+  takeAndSendPicture() async {
     try {
       // Ensure that the camera is initialized.
       await _initializeControllerFuture;
       // Attempt to take a picture and then get the location
       // where the image file is saved.
-      Image image = (await _controller.takePicture()) as Image;
+      final image = await _controller.takePicture();
+      sendMessage(image.path);
     } catch (e) {
       // If an error occurs, log the error to the console.
       print(e);
@@ -200,16 +224,7 @@ class _TranslatePageState extends State<TranslatePage> {
                       child: SingleChildScrollView(
                         scrollDirection: Axis.vertical, //.horizontal
                         child: Text(
-                          "1 Description that is too long in text format(Here Data is coming from API) jdlksaf j klkjjflkdsjfkddfdfsdfds " +
-                              "2 Description that is too long in text format(Here Data is coming from API) d fsdfdsfsdfd dfdsfdsf sdfdsfsd d " +
-                              "3 Description that is too long in text format(Here Data is coming from API)  adfsfdsfdfsdfdsf   dsf dfd fds fs" +
-                              "4 Description that is too long in text format(Here Data is coming from API) dsaf dsafdfdfsd dfdsfsda fdas dsad" +
-                              "5 Description that is too long in text format(Here Data is coming from API) dsfdsfd fdsfds fds fdsf dsfds fds " +
-                              "6 Description that is too long in text format(Here Data is coming from API) asdfsdfdsf fsdf sdfsdfdsf sd dfdsf" +
-                              "7 Description that is too long in text format(Here Data is coming from API) df dsfdsfdsfdsfds df dsfds fds fsd" +
-                              "8 Description that is too long in text format(Here Data is coming from API)" +
-                              "9 Description that is too long in text format(Here Data is coming from API)" +
-                              "10 Description that is too long in text format(Here Data is coming from API)",
+                          translatedText,
                           style: TextStyle(
                             fontSize:
                                 MediaQuery.of(context).size.height * 0.01 * 2,
@@ -264,8 +279,7 @@ class _TranslatePageState extends State<TranslatePage> {
                                         elevation: 0,
                                       ),
                                       onPressed: () => {
-                                        sendMessage(Image.asset(
-                                            "assets/images/hand.jpg")),
+                                        timer?.cancel(),
                                       },
                                       child: Text(
                                         "STOP",
@@ -327,7 +341,10 @@ class _TranslatePageState extends State<TranslatePage> {
                                         ),
                                         elevation: 0,
                                       ),
-                                      onPressed: () => {Navigator.pop(context)},
+                                      onPressed: () => {
+                                        timer?.cancel(),
+                                        Navigator.pop(context),
+                                      },
                                       child: Text(
                                         "BACK",
                                         style: TextStyle(
@@ -351,5 +368,9 @@ class _TranslatePageState extends State<TranslatePage> {
         ),
       ),
     );
+  }
+
+  void _updateState() {
+    setState(() {});
   }
 }
