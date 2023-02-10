@@ -13,8 +13,6 @@ Persons with disabilities who once found it challenging to communicate with thei
 **hAIndle**, enabling them to better connect with them, forming more meaningful relationships with their community.
 
 ## Future developments
-Our current AI model detects individual letters in ASL, and translates it into text. We would hope to expand our model
-to be able to accept British Sign Language (BSL) and be able to translate full words to text.
+Our current AI model detects individual letters in ASL, and translates it into text. We would hope to expand our model to be able to accept British Sign Language (BSL) and be able to translate full words to text. At the same time, we would hope to increase the reliability of our model, improving its accuracy. 
 
-We also hope to integrate our application into more mainstream web services such as Zoom Meetings, to better empower
-persons with disabilities. 
+We also hope to integrate our application into more mainstream web services such as Zoom Meetings, to better empower persons with disabilities.
