@@ -22,6 +22,7 @@ class _TranslatePageState extends State<TranslatePage> {
   late IO.Socket socket;
   String translatedText = "";
   Timer? timer;
+  int mode = 0;
 
   @override
   void setState(fn) {
@@ -33,7 +34,7 @@ class _TranslatePageState extends State<TranslatePage> {
   @override
   void initState() {
     super.initState();
-    initSocket();
+    // initSocket();
     // To display the current output from the Camera,
     // create a CameraController.
     if (widget.camera !=
@@ -46,18 +47,11 @@ class _TranslatePageState extends State<TranslatePage> {
         widget.camera,
         // Define the resolution to use.
         ResolutionPreset.medium,
-        enableAudio: false,
         imageFormatGroup: ImageFormatGroup.yuv420,
       );
       // Next, initialize the controller. This returns a Future.
       _initializeControllerFuture = _controller.initialize();
     }
-    socket.on('response_back', (newMessage) {
-      print("socketon");
-      translatedText = translatedText + newMessage[0];
-    });
-    timer =
-        Timer.periodic(Duration(seconds: 1), (Timer t) => takeAndSendPicture());
   }
 
   initSocket() {
@@ -72,6 +66,12 @@ class _TranslatePageState extends State<TranslatePage> {
     socket.onDisconnect((_) => print('Connection Disconnection'));
     socket.onConnectError((err) => print(err));
     socket.onError((err) => print(err));
+    socket.on('response_back', (newMessage) {
+      translatedText = translatedText + newMessage[0];
+      _updateState();
+    });
+    timer =
+        Timer.periodic(Duration(seconds: 1), (Timer t) => takeAndSendPicture());
   }
 
   @override
@@ -84,44 +84,18 @@ class _TranslatePageState extends State<TranslatePage> {
       // Dispose of the controller when the widget is disposed.
       _controller.dispose();
     }
-    socket.disconnect();
-    socket.dispose();
     super.dispose();
   }
 
   sendMessage(imagePath) async {
     print("sendingmessage");
     ByteData byteData = await rootBundle.load(imagePath);
-    // ByteData byteData = await rootBundle.load('assets/images/hand.jpg');
     Uint8List bytes = byteData.buffer.asUint8List();
     String base64Image = base64.encode(bytes);
     base64Image = "data:image/jpeg;base64," + base64Image;
-    // Map messageMap = {
-    //   // 'message': message,
-    //   'senderId': 1,
-    //   'receiverId': 2,
-    //   'time': DateTime.now().millisecondsSinceEpoch,
-    // };
     // Transmit image to server
     socket.emit('image', base64Image);
-    // Get translated letter from server
-    _updateState();
   }
-
-  // takePicture() async {
-  //   try {
-  //     // Ensure that the camera is initialized.
-  //     await _initializeControllerFuture;
-  //     // Attempt to take a picture and then get the location
-  //     // where the image file is saved.
-  //     final image = await _controller.takePicture();
-  //     print(image.path);
-  //     return image.path;
-  //   } catch (e) {
-  //     // If an error occurs, log the error to the console.
-  //     print(e);
-  //   }
-  // }
 
   takeAndSendPicture() async {
     try {
@@ -152,6 +126,7 @@ class _TranslatePageState extends State<TranslatePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  mode == 1 ?
                   // Instruction
                   Padding(
                     padding: EdgeInsets.only(
@@ -168,8 +143,29 @@ class _TranslatePageState extends State<TranslatePage> {
                       ),
                       textAlign: TextAlign.left,
                     ),
+                  )
+                  : mode == 2 ?
+                  Padding(
+                    padding: EdgeInsets.only(
+                        bottom: 0,
+                        left: MediaQuery.of(context).size.width / 20),
+                    child: Text(
+                      "Speak into the microphone!",
+                      style: TextStyle(
+                        fontSize:
+                        MediaQuery.of(context).size.height * 0.01 * 2.8,
+                        fontStyle: FontStyle.normal,
+                        fontWeight: FontWeight.bold,
+                        color: darkTextColor,
+                      ),
+                      textAlign: TextAlign.left,
+                    ),
+                  )
+                  : Container(
+                    height: MediaQuery.of(context).size.height / 12,
                   ),
-                  // Camera Feed
+                  mode != 2
+                  ? // Camera Feed
                   widget.camera !=
                           CameraDescription(
                               name: "noCamera",
@@ -209,12 +205,26 @@ class _TranslatePageState extends State<TranslatePage> {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                        ),
+                        )
+                  : // Audio input gif
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                        MediaQuery.of(context).size.width / 30,
+                        MediaQuery.of(context).size.height / 4.5,
+                        MediaQuery.of(context).size.width / 30,
+                        MediaQuery.of(context).size.height / 10),
+                    child: Image.asset(
+                      "assets/images/audioInput.gif",
+                      width: MediaQuery.of(context).size.width,
+                      height: MediaQuery.of(context).size.height / 4,
+                    ),
+                  ),
                   SizedBox(
                     height: MediaQuery.of(context).size.height / 50,
                   ),
                   // Translated Text
-                  Expanded(
+                  mode == 1 || mode == 2
+                  ? Expanded(
                     flex: 1,
                     child: Padding(
                       padding: EdgeInsets.fromLTRB(
@@ -234,7 +244,10 @@ class _TranslatePageState extends State<TranslatePage> {
                         ),
                       ),
                     ),
-                  ),
+                  )
+                  : Container(),
+                  mode == 1 || mode == 2
+                  ?
                   // Stop Button
                   Padding(
                       padding: EdgeInsets.only(bottom: 0),
@@ -280,7 +293,14 @@ class _TranslatePageState extends State<TranslatePage> {
                                         elevation: 0,
                                       ),
                                       onPressed: () => {
-                                        timer?.cancel(),
+                                        if (mode == 1) {
+                                          timer?.cancel(),
+                                          socket.disconnect(),
+                                          socket.dispose(),
+                                        },
+                                        translatedText = "",
+                                        mode = 0,
+                                        _updateState(),
                                       },
                                       child: Text(
                                         "STOP",
@@ -297,7 +317,150 @@ class _TranslatePageState extends State<TranslatePage> {
                                         textAlign: TextAlign.center,
                                       ),
                                     ),
-                                  ))))),
+                                  )))))
+                  : // Mic and Video Button
+                  Column(
+                    children: [
+                      SizedBox(
+                        height: MediaQuery.of(context).size.height / 5.03),
+                      Row (
+                    children: [
+                      SizedBox(
+                          width: MediaQuery.of(context).size.width / 14),
+                      Padding(
+                          padding: EdgeInsets.only(bottom: 0),
+                          child: Container(
+                              height: MediaQuery.of(context).size.height / 19,
+                              width: MediaQuery.of(context).size.width / 2.5,
+                              alignment: Alignment.center,
+                              margin: EdgeInsets.only(
+                                  top: MediaQuery.of(context).size.height / 40),
+                              decoration: const BoxDecoration(
+                                color: translucentPink,
+                                borderRadius:
+                                BorderRadius.all(Radius.circular(180)),
+                              ),
+                              child: Container(
+                                  height: MediaQuery.of(context).size.height / 19,
+                                  width: MediaQuery.of(context).size.width / 2.5,
+                                  alignment: Alignment.center,
+                                  margin: EdgeInsets.all(
+                                      MediaQuery.of(context).size.height / 200),
+                                  decoration: const BoxDecoration(
+                                    gradient: circleGradient,
+                                    borderRadius:
+                                    BorderRadius.all(Radius.circular(180)),
+                                  ),
+                                  child: Container(
+                                      margin: EdgeInsets.all(
+                                          MediaQuery.of(context).size.height / 200),
+                                      child: SizedBox(
+                                        height:
+                                        MediaQuery.of(context).size.height / 19,
+                                        width: MediaQuery.of(context).size.width /
+                                            2.5,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            primary: translucentWhite,
+                                            onPrimary: translucentWhite,
+                                            splashFactory: NoSplash.splashFactory,
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.all(
+                                                  Radius.circular(180)),
+                                            ),
+                                            elevation: 0,
+                                          ),
+                                          onPressed: () => {
+                                            mode = 2,
+                                            _updateState(),
+                                          },
+                                          child: Text(
+                                            "SPEECH",
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                                  0.01 *
+                                                  2,
+                                              fontStyle: FontStyle.normal,
+                                              fontWeight: FontWeight.bold,
+                                              color: lightTextColor,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ))))),
+                      SizedBox(
+                        width: MediaQuery.of(context).size.width / 18,
+                      ),
+                      Padding(
+                          padding: EdgeInsets.only(bottom: 0),
+                          child: Container(
+                              height: MediaQuery.of(context).size.height / 19,
+                              width: MediaQuery.of(context).size.width / 2.5,
+                              alignment: Alignment.center,
+                              margin: EdgeInsets.only(
+                                  top: MediaQuery.of(context).size.height / 40),
+                              decoration: const BoxDecoration(
+                                color: translucentPink,
+                                borderRadius:
+                                BorderRadius.all(Radius.circular(180)),
+                              ),
+                              child: Container(
+                                  height: MediaQuery.of(context).size.height / 19,
+                                  width: MediaQuery.of(context).size.width / 2.5,
+                                  alignment: Alignment.center,
+                                  margin: EdgeInsets.all(
+                                      MediaQuery.of(context).size.height / 200),
+                                  decoration: const BoxDecoration(
+                                    gradient: circleGradient,
+                                    borderRadius:
+                                    BorderRadius.all(Radius.circular(180)),
+                                  ),
+                                  child: Container(
+                                      margin: EdgeInsets.all(
+                                          MediaQuery.of(context).size.height / 200),
+                                      child: SizedBox(
+                                        height:
+                                        MediaQuery.of(context).size.height / 19,
+                                        width: MediaQuery.of(context).size.width /
+                                            2.5,
+                                        child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            primary: translucentWhite,
+                                            onPrimary: translucentWhite,
+                                            splashFactory: NoSplash.splashFactory,
+                                            shape: const RoundedRectangleBorder(
+                                              borderRadius: BorderRadius.all(
+                                                  Radius.circular(180)),
+                                            ),
+                                            elevation: 0,
+                                          ),
+                                          onPressed: () => {
+                                            mode = 1,
+                                            _updateState(),
+                                            initSocket(),
+                                          },
+                                          child: Text(
+                                            "VIDEO",
+                                            style: TextStyle(
+                                              fontSize: MediaQuery.of(context)
+                                                  .size
+                                                  .height *
+                                                  0.01 *
+                                                  2,
+                                              fontStyle: FontStyle.normal,
+                                              fontWeight: FontWeight.bold,
+                                              color: lightTextColor,
+                                            ),
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ))))),
+                    ],
+                  ),
+                  ]
+                  ),
                   // Back Button
                   Padding(
                       padding: EdgeInsets.only(bottom: 0),
@@ -344,6 +507,8 @@ class _TranslatePageState extends State<TranslatePage> {
                                       ),
                                       onPressed: () => {
                                         timer?.cancel(),
+                                        socket.disconnect(),
+                                        socket.dispose(),
                                         Navigator.pop(context),
                                       },
                                       child: Text(
